@@ -58,6 +58,7 @@ Verify the install:
 
 ## Development notes
 
-- The **Vault Context** block (plugin contract + MUST rules) is shared verbatim across all 5 skills and both agents — edit all 7 copies together.
-- Bump `version` in `plugin.json` when changing anything — installed copies update from this repo.
+- The **Vault Context** block (plugin contract + MUST rules) is shared verbatim across all 5 skills and both agents — edit all 7 copies together. CI fails if the copies diverge.
+- Bump `version` in `plugin.json` when changing plugin content (`skills/`, `agents/`, `hooks/`, `.claude-plugin/`) — installed copies update from this repo, and CI enforces the bump.
+- Releases are automatic: when a new `plugin.json` version lands on `main`, CI tags it `v<version>` and publishes a GitHub release with generated notes. No manual tagging.
 - `displayName` is deliberately omitted (needs Claude Code ≥ 2.1.143).

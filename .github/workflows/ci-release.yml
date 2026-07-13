@@ -1,0 +1,80 @@
+name: CI & Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate JSON files
+        run: |
+          for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json; do
+            python3 -m json.tool "$f" > /dev/null || { echo "Invalid JSON: $f"; exit 1; }
+          done
+
+      - name: Vault Context blocks must be byte-identical across all skills and agents
+        run: |
+          files=$(ls skills/*/SKILL.md agents/*.md)
+          count=$(echo "$files" | wc -l)
+          if [ "$count" -ne 7 ]; then
+            echo "Expected 7 skill/agent files carrying the Vault Context block, found $count:"
+            echo "$files"
+            exit 1
+          fi
+          for f in $files; do
+            block=$(awk '/<!-- Vault Context/,/their basenames collide/' "$f")
+            lines=$(echo "$block" | wc -l)
+            if [ "$lines" -lt 20 ]; then
+              echo "Vault Context block missing or truncated in $f ($lines lines)"
+              exit 1
+            fi
+            echo "$block" | md5sum | cut -d' ' -f1
+          done | sort -u > /tmp/hashes
+          if [ "$(wc -l < /tmp/hashes)" -ne 1 ]; then
+            echo "Vault Context blocks have diverged — edit all 7 copies together:"
+            for f in $files; do
+              printf '%s  %s\n' "$(awk '/<!-- Vault Context/,/their basenames collide/' "$f" | md5sum | cut -d' ' -f1)" "$f"
+            done
+            exit 1
+          fi
+
+      - name: Plugin changes must bump the version
+        run: |
+          latest=$(git tag -l 'v*' --sort=-v:refname | head -1)
+          [ -z "$latest" ] && { echo "No tags yet — skipping"; exit 0; }
+          version=$(python3 -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])')
+          if [ "v$version" = "$latest" ] && ! git diff --quiet "$latest" HEAD -- skills agents hooks .claude-plugin; then
+            echo "Plugin content changed since $latest but plugin.json version is still $version — bump it."
+            git diff --stat "$latest" HEAD -- skills agents hooks .claude-plugin
+            exit 1
+          fi
+
+  release:
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag and release new version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])')
+          if git rev-parse "v$version" > /dev/null 2>&1; then
+            echo "v$version already tagged — nothing to release"
+            exit 0
+          fi
+          gh release create "v$version" --title "v$version" --generate-notes
