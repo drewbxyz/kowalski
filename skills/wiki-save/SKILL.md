@@ -1,6 +1,6 @@
 ---
 name: wiki-save
-description: Save the current conversation or a specific insight into the wiki vault as a structured note. Triggers on: save this, file this, save to wiki, keep this, /save.
+description: Save the current conversation or a specific insight into the wiki vault as a structured note. Triggers on: save this, file this, save to wiki, keep this.
 ---
 
 ## 1. Vault Context
@@ -116,7 +116,7 @@ No blank line between the closing `---` and the `# Title` heading. Link the new 
 
 ## 7. Third-party privacy (applies here too)
 
-Saved conversations are the highest-risk path for this: chats casually mention what's going on with other people. Before writing anything, check every sentence that names someone other than Drew for medical, financial, or similarly private detail. Keep at most one neutral line (e.g., "away for medical treatment") — no diagnoses, prognoses, treatment plans, financial figures, or similar specifics about third parties, even if the user stated them plainly in the conversation.
+Saved conversations are the highest-risk path for this: chats casually mention what's going on with other people. Before writing anything, check every sentence that names someone other than the vault owner for medical, financial, or similarly private detail. Keep at most one neutral line (e.g., "away for medical treatment") — no diagnoses, prognoses, treatment plans, financial figures, or similar specifics about third parties, even if the user stated them plainly in the conversation.
 
 ## 8. Shared-file updates, in order
 

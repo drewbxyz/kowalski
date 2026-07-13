@@ -132,7 +132,7 @@ When done, report back to the orchestrator with a structured summary:
   ```json
   {
     "${user_config.sources_dir}/<cat>/<file>": {
-      "hash": "<md5 hash you were given or computed>",
+      "hash": "<md5 hash you were given by the orchestrator>",
       "ingested_at": "<YYYY-MM-DD>",
       "pages_created": ["${user_config.wiki_root}/sources/<Title>.md", "..."],
       "pages_updated": ["${user_config.wiki_root}/areas/....md", "..."]

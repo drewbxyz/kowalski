@@ -2,7 +2,7 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup|resume",
+        "matcher": "startup|resume|clear",
         "hooks": [
           {
             "type": "command",
@@ -16,8 +16,8 @@
         "matcher": "",
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "Hook-injected context does not survive compaction. If the wiki hot cache exists (hot.md at the top of the configured wiki root — wiki/hot.md by default), silently re-read it now to restore the hot cache. Do not announce this."
+            "type": "command",
+            "command": "[ -f \"${user_config.wiki_root}/hot.md\" ] && cat \"${user_config.wiki_root}/hot.md\" || true"
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "If any files under the configured wiki root (wiki/ by default) were created or edited this session, rewrite its hot.md now: under 500 words, overwrite completely, keep its existing section shape (Last Updated, Identity, Active Projects, Recent Milestones, Current Threads, Roles & Communities, Engineering Focus, This Vault). If nothing under the wiki root changed, do nothing."
+            "prompt": "If files under the configured wiki root were created or edited this session AND a hot.md already exists at the top of that wiki root, verify the agent has rewritten hot.md this session (under 500 words, preserving its existing section shape). If the wiki root was untouched or hot.md does not exist, pass."
           }
         ]
       }

@@ -60,7 +60,7 @@ Every wiki folder has an `_index.md` catalog page. `${user_config.wiki_root}/ind
 
 **Never auto-select a topic.** If the user's request doesn't name a concrete topic (e.g. "autoresearch" with nothing after it, or "research something interesting"), stop and ask what to research — do not infer or pick one yourself.
 
-This is a hard rule, not a preference: an earlier version of this tool picked topics automatically by scoring "boundary" gaps in the wiki's link graph (concepts mentioned but never fleshed out). That produced research nobody asked for and drifted from what Drew actually wanted the vault to know. The fix was to require a human-named topic every time. Do not reintroduce graph-driven topic selection.
+This is a hard rule, not a preference: an earlier version of this tool picked topics automatically by scoring "boundary" gaps in the wiki's link graph (concepts mentioned but never fleshed out). That produced research nobody asked for and drifted from what the vault owner actually wanted the vault to know. The fix was to require a human-named topic every time. Do not reintroduce graph-driven topic selection.
 
 If the user gives a topic that's really a whole domain ("coffee"), narrow it with one clarifying question before planning (e.g. "home espresso machine maintenance, or roasting, or something else?") rather than guessing scope.
 
@@ -75,7 +75,7 @@ Once the topic is confirmed, decompose it into **3–6 sub-questions** that toge
 Work through the sub-questions from the confirmed plan, one at a time:
 
 1. **WebSearch** the sub-question. Read the result snippets to pick the most relevant, authoritative-looking sources — prefer primary/official sources (manufacturer docs, standards bodies, established outlets) over SEO content farms and forum posts, but a forum thread with genuine specifics beats a thin blog rewrite.
-2. **Fetch the top 2–3 sources** for that sub-question with the Defuddle CLI, per `.agents/skills/defuddle/SKILL.md` (`defuddle parse <url> --md`). Defuddle takes the URL directly and returns clutter-stripped markdown — it *replaces* WebFetch for these fetches (it cannot clean text you've already fetched some other way). Fall back to WebFetch only for a URL where defuddle fails or on a machine where it isn't installed. Don't restate defuddle's instructions here; follow its SKILL.md.
+2. **Fetch the top 2–3 sources** for that sub-question with the Defuddle CLI: run `defuddle parse <url> --md`. Defuddle takes the URL directly and returns clutter-stripped markdown — it *replaces* WebFetch for these fetches (it cannot clean text you've already fetched some other way). Fall back to WebFetch only for a URL where defuddle fails or on a machine where it isn't installed.
 3. **Extract claims**, each tagged with which source it came from. A claim is a single factual statement worth keeping ("descale every 3 months with citric acid solution, per Breville's official manual"), not a paragraph summary. Keep the sub-question, the claim, the source URL, and a rough confidence read (does the source seem authoritative and current, or thin/dated/contradicted elsewhere) together as you go — this is what frontmatter and body will be built from in section 5.
 4. If two sources disagree, keep both claims and note the disagreement — don't silently pick a winner.
 
@@ -93,7 +93,7 @@ Do not keep searching past these conditions "just to be thorough." No open-ended
 
 Structure:
 
-- **One research hub page** for the topic, filed in the relevant `${user_config.wiki_root}/areas/` folder (or `${user_config.wiki_root}/resources/` if the topic is a tool, product, or project rather than a life area). Follow `${user_config.wiki_root}/areas/travel/San Francisco Day Trips.md` for structure and tone: a clear intro paragraph stating scope and any constraints, then one section per sub-question / theme, callouts (`> [!tip]`, `> [!warning]`, `> [!gap]`) for caveats and open questions, and a `## Sources` section listing every URL used with a one-line confidence note per source (`high (official docs)`, `medium (dated blog)`, etc.).
+- **One research hub page** for the topic, filed in the relevant `${user_config.wiki_root}/areas/` folder (or `${user_config.wiki_root}/resources/` if the topic is a tool, product, or project rather than a life area). Match the structure and tone of an existing research/hub page in the destination folder — open a live page there first if unsure. Shape: a clear intro paragraph stating scope and any constraints, then one section per sub-question / theme, callouts (`> [!tip]`, `> [!warning]`, `> [!gap]`) for caveats and open questions, and a `## Sources` section listing every URL used with a one-line confidence note per source (`high (official docs)`, `medium (dated blog)`, etc.).
 - **Per-facet pages only when a facet is independently substantial** — enough content that it would bloat the hub or that it's likely to be searched/linked on its own (e.g. a specific product or technique that deserves its own entity page). Most autoresearch runs should produce just the one hub page; don't split reflexively.
 
 Frontmatter for every page created or touched by this skill carries provenance in addition to the standard MUST fields:
@@ -105,7 +105,7 @@ sources:
 confidence: <high|medium|low>   # overall confidence in the page, not just one claim
 ```
 
-Use the existing `sources:` frontmatter convention (see `${user_config.wiki_root}/resources/animations.dev.md`, `${user_config.wiki_root}/areas/Fitness.md`) — a flat list of URLs (or `${user_config.sources_dir}/...` paths when a source doubles as an ingested document). Where individual claims within the body carry differing confidence or conflicting sources, call that out inline (a `> [!contradiction]` or a parenthetical attribution) rather than only in frontmatter — frontmatter `confidence` is the page-level summary, not a substitute for per-claim attribution built during the research loop.
+Use the existing `sources:` frontmatter convention — open a live page that already carries a `sources:` list first if unsure of the shape — a flat list of URLs (or `${user_config.sources_dir}/...` paths when a source doubles as an ingested document). Where individual claims within the body carry differing confidence or conflicting sources, call that out inline (a `> [!contradiction]` or a parenthetical attribution) rather than only in frontmatter — frontmatter `confidence` is the page-level summary, not a substitute for per-claim attribution built during the research loop.
 
 After writing the page(s):
 

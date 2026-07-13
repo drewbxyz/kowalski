@@ -4,6 +4,8 @@ Claude Code plugin for LLM-maintained Obsidian wiki operations ("Kowalski Wiki O
 
 Converted from the vault-carried `tools/claude/` symlink setup per the *Kowalski Plugin Conversion Spec* (2026-07-12). This repo is both the plugin and its own single-plugin marketplace.
 
+> **Scope:** built for the author's vault, but usable by others. To adopt it, customize three things: (a) the shared **Vault Context** block that appears verbatim in all 5 skills and both agents (the folder tree and life-area names like FRC/Birding/Coffee), (b) any inline example page references in the skill bodies, and (c) the `wiki_root`/`sources_dir` paths via `/plugin configure kowalski`. The workflow logic ports as-is.
+
 ## Contents
 
 ```
@@ -44,17 +46,23 @@ The vault is deliberately not a git repo, so the plugin is installed per machine
 
 Answer the two config prompts (defaults fit the standard vault layout), then launch Claude Code **from the vault root** — all skill commands are vault-root-relative.
 
+**Recommended: enable kowalski per-project, not globally.** Its hooks fire in *every* project where the plugin is enabled, so a global enablement runs the SessionStart/PostCompact/Stop hooks in unrelated repos too. Scope it to the vault by enabling it in the vault's `.claude/settings.json` (project-level) rather than in your user-level settings — that way the hooks only run when you launch Claude Code from the vault.
+
 Usage after install: natural-language triggers work unchanged ("ingest X", "lint the wiki", "save this"); explicit slash form is namespaced: `/kowalski:wiki-lint`, `/kowalski:wiki-ingest`, etc. Worker agents resolve as `kowalski:ingest-worker` / `kowalski:lint-worker`.
 
 ## Cutover from the vault-carried setup (per machine, once)
 
 Do these **after** installing the plugin — the old symlinks take precedence over same-named plugin skills/agents, so leaving them means the plugin appears active but the symlinks actually run:
 
+0. **Disable or uninstall the `claude-obsidian` plugin first.** Its skills (`wiki-ingest`, `wiki-lint`, `wiki-query`, `autoresearch`, `save`) collide with kowalski's on natural-language triggers — with both enabled, a plain "ingest this" or "lint the wiki" dispatches nondeterministically to whichever the harness resolves first. Turn it off before enabling kowalski so dispatch is unambiguous.
 1. Remove the symlinks `setup.sh` created: `.claude/skills` and `.claude/agents` in the vault.
 2. Remove the three hook blocks (`SessionStart`, `PostCompact`, `Stop`) from the vault's `.claude/settings.json` — the plugin's `hooks/hooks.json` replaces them.
 3. Retire `tools/claude/` in the vault (its contents now live here).
 4. Update the vault's `CLAUDE.md` Operations section to point at this plugin.
-5. Verify: new session shows the hot cache on start, `lint the wiki` fans out to `kowalski:lint-worker`.
+5. Verify:
+   - New session shows the hot cache on start, and `lint the wiki` fans out to `kowalski:lint-worker`.
+   - `/plugin configure kowalski` shows both config options (`wiki_root`, `sources_dir`).
+   - Ending a session (Stop) in a non-vault project does nothing to any `wiki/` directory there (the Stop hook is gated on an existing `hot.md` at the configured wiki root, so it never touches unrelated repos).
 
 For the headless Pi, confirm the plugin + marketplace trust flow works non-interactively; if it doesn't, `claude --plugin-dir ~/repos/kowalski` is the fallback load mechanism.
 
