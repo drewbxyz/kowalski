@@ -1,0 +1,14 @@
+{
+  "name": "drewbeamer",
+  "owner": {
+    "name": "Drew Beamer",
+    "email": "d@drewb.xyz"
+  },
+  "plugins": [
+    {
+      "name": "kowalski",
+      "source": "./",
+      "description": "LLM-maintained Obsidian wiki operations: ingest, query, lint, save, autoresearch."
+    }
+  ]
+}

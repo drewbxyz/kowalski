@@ -1,0 +1,25 @@
+{
+  "name": "kowalski",
+  "version": "0.1.0",
+  "description": "LLM-maintained Obsidian wiki operations: ingest, query, lint, save, autoresearch — with parallel worker agents and hot-cache hooks.",
+  "author": {
+    "name": "Drew Beamer",
+    "email": "d@drewb.xyz"
+  },
+  "userConfig": {
+    "wiki_root": {
+      "type": "directory",
+      "title": "Wiki root",
+      "description": "The wiki folder, relative to the vault root you launch Claude Code from",
+      "default": "wiki",
+      "required": true
+    },
+    "sources_dir": {
+      "type": "directory",
+      "title": "Sources drop-zone",
+      "description": "The synced source drop-zone folder, relative to the vault root",
+      "default": "sources",
+      "required": true
+    }
+  }
+}
