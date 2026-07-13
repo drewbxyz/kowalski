@@ -9,39 +9,27 @@ description: Save the current conversation or a specific insight into the wiki v
 
 Vault root: the Obsidian vault directory — the one containing `${user_config.wiki_root}/` and `${user_config.sources_dir}/`. Claude Code is launched from here; run every command from the vault root.
 
+**Plugin contract** — fixed paths the machinery depends on:
+
 ```
 <vault-root>/
 ├── ${user_config.sources_dir}/             # synced source drop zone (visible so Obsidian Sync carries it)
-│   ├── articles/
-│   ├── journal/
-│   ├── notes/
-│   ├── recipes/
 │   └── manifest.json    # delta-tracking: hash + ingested_at per source
-├── ${user_config.wiki_root}/
-│   ├── index.md         # master catalog
-│   ├── log.md           # append-only operations log (new entries at TOP)
-│   ├── hot.md            # hot cache: recent context + session seed (~500 words)
-│   ├── overview.md      # stable vault shape (status lives in hot.md)
-│   ├── areas/            # life-area hubs: Engineering, Work, FRC, Fitness, Life, Birding, Coffee, Travel, Cooking, Reading, Wishlist, …
-│   │   └── travel/       # one page per trip
-│   ├── engineering/      # engineering craft notes (TypeScript, Next.js, …)
-│   │   └── effect-ts/    # Effect-TS sub-series
-│   ├── goals/            # personal and professional goals
-│   ├── learning/         # self-directed study paths
-│   ├── people/           # relationships, shared context
-│   ├── resources/        # tools, orgs, projects
-│   │   ├── books/
-│   │   └── recipes/
-│   ├── sources/           # one summary page per ${user_config.sources_dir}/ source
-│   └── meta/              # dashboard, lint reports, LLM Wiki Schema reference
-│       └── archive/       # superseded lint reports (keep latest 2 in meta/)
-├── _templates/            # Templater templates
-├── _attachments/          # images and PDFs referenced by wiki pages
-├── archive/               # retired working docs (not wiki pages)
-└── projects/              # working project files (not wiki pages)
+└── ${user_config.wiki_root}/
+    ├── index.md         # master catalog
+    ├── log.md           # append-only operations log (new entries at TOP)
+    ├── hot.md           # hot cache: recent context + session seed (~500 words)
+    ├── overview.md      # stable vault shape (status lives in hot.md)
+    ├── sources/         # one summary page per ${user_config.sources_dir}/ source
+    └── meta/            # dashboard, lint reports, LLM Wiki Schema reference
+        └── archive/     # superseded lint reports (keep latest 2 in meta/)
 ```
 
-Every wiki folder has an `_index.md` catalog page. `${user_config.wiki_root}/index.md` links the curated highlights; folder `_index.md` files carry the long tails (sources, recipes, books).
+Every wiki folder has an `_index.md` catalog page. `${user_config.wiki_root}/index.md` links the curated highlights; folder `_index.md` files carry the long tails.
+
+**Discovery rule (MUST):** the vault's content structure is its own. To learn where content lives, read `overview.md` and the folder `_index.md` catalogs, and look at where similar pages already live. File new pages alongside their peers; never invent a parallel folder for a type the vault already files somewhere.
+
+**No precedent?** If the vault has no existing home for a content type (fresh vault, or a genuinely new kind of content), do not invent one silently and do not assume any particular taxonomy — propose a structure to the user based on who they are and what the content is, and confirm before creating folders. When a new folder is agreed, create its `_index.md` and link it from `${user_config.wiki_root}/index.md`.
 
 **MUST rules (Kowalski conventions):**
 
@@ -50,7 +38,7 @@ Every wiki folder has an `_index.md` catalog page. `${user_config.wiki_root}/ind
 - Wikilinks use `[[Note Name]]` format. Filenames are Title Case with spaces and unique vault-wide.
 - `${user_config.wiki_root}/log.md` is append-only — new entries go at the TOP. Never edit or rewrite old entries.
 - `${user_config.wiki_root}/index.md` is the master catalog — update it on every ingest and whenever a page is added or renamed.
-- **Single source of truth for volatile stats**: running numbers (life-list counts, PRs, project metrics) live on exactly ONE hub page; every other page links there instead of restating the number. Historical snapshots ("ended the trip at 1,229") are fine anywhere.
+- **Single source of truth for volatile stats**: running numbers (counts, tallies, project metrics) live on exactly ONE hub page; every other page links there instead of restating the number. Historical snapshots ("ended the year at 47") are fine anywhere.
 - **Close the loop on events**: when something concludes (trip, move, meetup), update the event's own page and every page that referenced it as upcoming — not just the hubs. Grep for the event name before finishing.
 - **Third-party privacy**: don't record other people's medical, financial, or similarly private details. If context requires it, one neutral line at most (e.g., "away for medical treatment") — no diagnoses, prognoses, or treatment plans.
 - `${user_config.sources_dir}/` contains source documents — never modify them, except `${user_config.sources_dir}/manifest.json`.
@@ -75,19 +63,19 @@ grep -ril '<topic keyword>' ${user_config.wiki_root}/
 
 Try a couple of keyword variants if the first grep comes up empty (e.g. both "espresso" and "Coffee" for a dial-in note). Also open `${user_config.wiki_root}/index.md` and skim the curated links for the relevant area. Then decide:
 
-- **An existing page already covers this topic** → update it (see section 5). This is the default outcome for anything touching a life area (coffee, birding, fitness, FRC, work, travel, …), since those hubs already exist under `${user_config.wiki_root}/areas/`.
+- **An existing page already covers this topic** → update it (see section 5). This is the default outcome for anything touching a life area (health, work, travel, hobbies, …), since those hubs already exist in the vault.
 - **Nothing existing fits** → create a new page (see section 4). When you create, name in your response which existing pages you checked and ruled out (e.g. "checked [[Coffee]] and [[Cooking]] — this is a new roaster comparison, not a dial-in update, so it gets its own resource page linked from both").
 
 ## 4. Detecting note type → destination (when creating new)
 
-| Content shape | Destination |
-|---|---|
-| Answer to a question, synthesized from the wiki or general knowledge, worth keeping | Source-less page in the relevant `${user_config.wiki_root}/areas/` or `${user_config.wiki_root}/engineering/` folder (no `${user_config.sources_dir}/` entry, no `${user_config.wiki_root}/sources/` summary page — there is no raw source) |
-| Engineering insight, pattern, or craft note | `${user_config.wiki_root}/engineering/` (Effect-TS pieces go in `${user_config.wiki_root}/engineering/effect-ts/`) |
-| Life/admin update about something already tracked (a trip detail, a status change, a running log entry) | Update the relevant existing `${user_config.wiki_root}/areas/` page — do not create a new page for this case |
-| New resource, tool, org, or project worth tracking | `${user_config.wiki_root}/resources/` |
+First discover where this vault files the content shape, per the Vault Context discovery rule (`overview.md`, folder `_index.md` catalogs, where existing peer pages live), and file alongside those peers. Two shape notes:
 
-This table only applies once section 3's search comes up empty. A "life/admin update" almost never creates a new page — it updates the area hub that already exists.
+- **An answer to a question**, synthesized from the wiki or general knowledge and worth keeping, is a source-less page — no `${user_config.sources_dir}/` entry and no `${user_config.wiki_root}/sources/` summary page, because there is no raw source.
+- **A life/admin update about something already tracked** (a trip detail, a status change, a running log entry) updates the relevant existing hub page — do not create a new page for this case.
+
+If no precedent exists anywhere, do not pick a location yourself — propose 1–2 sensible options to the user, grounded in what the vault already looks like and what they seem to care about, confirm, then file. When a new folder is agreed, register it (create its `_index.md`, link it from `${user_config.wiki_root}/index.md`).
+
+This guidance only applies once section 3's search comes up empty. A "life/admin update" almost never creates a new page — it updates the hub that already exists.
 
 ## 5. Updating an existing page
 

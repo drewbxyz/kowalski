@@ -4,7 +4,7 @@ Claude Code plugin for LLM-maintained Obsidian wiki operations ("Kowalski Wiki O
 
 Converted from the vault-carried `tools/claude/` symlink setup per the *Kowalski Plugin Conversion Spec* (2026-07-12). This repo is both the plugin and its own single-plugin marketplace.
 
-> **Scope:** built for the author's vault, but usable by others. To adopt it, customize three things: (a) the shared **Vault Context** block that appears verbatim in all 5 skills and both agents (the folder tree and life-area names like FRC/Birding/Coffee), (b) any inline example page references in the skill bodies, and (c) the `wiki_root`/`sources_dir` paths via `/plugin configure kowalski`. The workflow logic ports as-is.
+> **Scope:** works with any vault structure — the skills discover the vault's content layout at runtime (via `overview.md`, the folder `_index.md` catalogs, and where existing pages already live). The only hard requirements are the plugin-contract paths: `index.md`, `hot.md`, `log.md`, `overview.md`, `sources/`, and `meta/` under `wiki_root`; an `_index.md` catalog per wiki folder; and `sources_dir` with its `manifest.json`. Where no structure exists yet — a fresh vault, or a genuinely new kind of content — the skills design one with the user rather than applying a template. Adopters set `wiki_root`/`sources_dir` via `/plugin configure kowalski`.
 
 ## Contents
 
@@ -14,7 +14,7 @@ Converted from the vault-carried `tools/claude/` symlink setup per the *Kowalski
 └── marketplace.json   # self-hosting marketplace ("drewbeamer") listing this plugin
 skills/                # wiki-ingest, wiki-query, wiki-lint, wiki-save, autoresearch
 agents/                # ingest-worker, lint-worker (dispatched as kowalski:<name>)
-hooks/hooks.json       # SessionStart (cat hot.md), PostCompact + Stop (prompt hooks)
+hooks/hooks.json       # SessionStart + PostCompact (cat hot.md), Stop (prompt hook)
 ```
 
 ## Configurable paths
@@ -26,9 +26,9 @@ On enable, Claude Code prompts for two directories (persisted per machine in `se
 | `wiki_root` | `wiki` | The wiki folder, relative to the vault root |
 | `sources_dir` | `sources` | The synced source drop-zone, relative to the vault root |
 
-`${user_config.*}` placeholders in skill/agent content and the hook command are substituted **before the model reads them**, so the skills' bash commands carry the literal configured paths. Sub-hubs (`areas/`, `engineering/`, …) are fixed names under `wiki_root` by design — only the two roots are configurable.
+`${user_config.*}` placeholders in skill/agent content and the hook command are substituted **before the model reads them**, so the skills' bash commands carry the literal configured paths. Content folders under `wiki_root` are discovered at runtime rather than fixed (see the skills' Vault Context block) — only the two roots are configurable.
 
-**Known limitation:** the PostCompact/Stop hooks are `prompt`-type, where `${user_config.*}` substitution is not documented to apply — they are worded generically ("the configured wiki root, `wiki/` by default"). With a non-default `wiki_root`, the model resolves the actual path from session context.
+**Known limitation:** the Stop hook is `prompt`-type, where `${user_config.*}` substitution is not documented to apply — it is worded generically ("the configured wiki root"). With a non-default `wiki_root`, the evaluator resolves the actual path from session context.
 
 ## Install
 
