@@ -5,7 +5,7 @@ description: Health check the Obsidian wiki vault. Finds orphan pages, dead wiki
 
 ## 1. Vault Context
 
-<!-- Vault Context: shared verbatim across all kowalski plugin skills and agents — edit all copies together -->
+<!-- Vault Context: generated from shared/vault-context.md — edit that file and run scripts/sync-shared-blocks.sh -->
 
 Vault root: the Obsidian vault directory — the one containing `${user_config.wiki_root}/` and `${user_config.sources_dir}/`. Claude Code is launched from here; run every command from the vault root.
 
