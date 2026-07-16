@@ -128,7 +128,7 @@ For one confirmed-new-or-changed source, in order:
 8. **Write the manifest entry** in `${user_config.sources_dir}/manifest.json` under `sources["<full source path>"]`:
    ```json
    {
-     "hash": "<md5 hash from step 2 of the delta check>",
+     "hash": "<md5 hash computed during the delta check (section 2)>",
      "ingested_at": "<YYYY-MM-DD>",
      "pages_created": ["${user_config.wiki_root}/sources/<Title>.md", "..."],
      "pages_updated": ["${user_config.wiki_root}/<folder>/....md", "..."]
