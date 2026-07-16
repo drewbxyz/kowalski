@@ -43,6 +43,7 @@ Every wiki folder has an `_index.md` catalog page. `${user_config.wiki_root}/ind
 - **Third-party privacy**: don't record other people's medical, financial, or similarly private details. If context requires it, one neutral line at most (e.g., "away for medical treatment") — no diagnoses, prognoses, or treatment plans.
 - `${user_config.sources_dir}/` contains source documents — never modify them, except `${user_config.sources_dir}/manifest.json`.
 - Never wikilink files under `${user_config.sources_dir}/` — reference them with inline-code paths only (e.g. `` `${user_config.sources_dir}/articles/foo.md` ``); their basenames collide with `${user_config.wiki_root}/sources/` pages.
+<!-- /Vault Context -->
 
 ## 2. Delta check (always first)
 
@@ -69,6 +70,7 @@ For one confirmed-new-or-changed source, in order:
 
 1. **Read the source fully** (not a partial read) from its `${user_config.sources_dir}/<cat>/<file>` path.
 2. **Write the summary page** to `${user_config.wiki_root}/sources/<Title>.md`. New pages must match the schema of the existing `${user_config.wiki_root}/sources/*.md` pages — open a live page of the same category first if unsure. Frontmatter (omit fields marked "omit if" when not applicable):
+   <!-- Summary Page Spec: shared verbatim between skills/wiki-ingest/SKILL.md and agents/ingest-worker.md — edit both copies together -->
    ```yaml
    ---
    type: source
@@ -111,6 +113,7 @@ For one confirmed-new-or-changed source, in order:
 
    - Related: [[Entity Page]], [[Another Page]]
    ```
+   <!-- /Summary Page Spec -->
 3. **Create or update entity and concept pages** touched by the source's content — new pages or edits to existing ones. Apply the filing procedure (section 4) to decide where. Watch for contradictions with existing pages: if the source conflicts with a claim already in the wiki, add a `> [!contradiction]` callout to **both** the new and the existing page, describing the conflict — don't silently overwrite.
 4. **Update touched folders' `_index.md`** — add a line for each new page in the relevant folder catalog(s). If the index is stats-based rather than a page list (e.g. `${user_config.wiki_root}/sources/_index.md`), RECOMPUTE each touched count from the actual files/tags — never increment the prior value blindly.
 5. **Update `${user_config.wiki_root}/index.md`** — add or adjust the curated link for the new/updated content.

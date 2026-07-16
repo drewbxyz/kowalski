@@ -25,14 +25,16 @@ jobs:
       - name: Vault Context blocks must be byte-identical across all skills and agents
         run: |
           files=$(ls skills/*/SKILL.md agents/*.md)
-          count=$(echo "$files" | wc -l)
-          if [ "$count" -ne 7 ]; then
-            echo "Expected 7 skill/agent files carrying the Vault Context block, found $count:"
-            echo "$files"
+          missing=""
+          for f in $files; do
+            grep -q '<!-- Vault Context' "$f" || missing="$missing $f"
+          done
+          if [ -n "$missing" ]; then
+            echo "Files missing the '<!-- Vault Context' start marker:$missing"
             exit 1
           fi
           for f in $files; do
-            block=$(awk '/<!-- Vault Context/,/their basenames collide/' "$f")
+            block=$(awk '/<!-- Vault Context/,/<!-- \/Vault Context -->/' "$f")
             lines=$(echo "$block" | wc -l)
             if [ "$lines" -lt 20 ]; then
               echo "Vault Context block missing or truncated in $f ($lines lines)"
@@ -41,10 +43,26 @@ jobs:
             echo "$block" | md5sum | cut -d' ' -f1
           done | sort -u > /tmp/hashes
           if [ "$(wc -l < /tmp/hashes)" -ne 1 ]; then
-            echo "Vault Context blocks have diverged — edit all 7 copies together:"
+            echo "Vault Context blocks have diverged — edit all copies together:"
             for f in $files; do
-              printf '%s  %s\n' "$(awk '/<!-- Vault Context/,/their basenames collide/' "$f" | md5sum | cut -d' ' -f1)" "$f"
+              printf '%s  %s\n' "$(awk '/<!-- Vault Context/,/<!-- \/Vault Context -->/' "$f" | md5sum | cut -d' ' -f1)" "$f"
             done
+            exit 1
+          fi
+
+      - name: Summary page spec must be byte-identical between wiki-ingest and ingest-worker
+        run: |
+          a=skills/wiki-ingest/SKILL.md
+          b=agents/ingest-worker.md
+          for f in "$a" "$b"; do
+            grep -q '<!-- Summary Page Spec' "$f" || { echo "Missing '<!-- Summary Page Spec' start marker in $f"; exit 1; }
+          done
+          ha=$(awk '/<!-- Summary Page Spec/,/<!-- \/Summary Page Spec -->/' "$a" | md5sum | cut -d' ' -f1)
+          hb=$(awk '/<!-- Summary Page Spec/,/<!-- \/Summary Page Spec -->/' "$b" | md5sum | cut -d' ' -f1)
+          if [ "$ha" != "$hb" ]; then
+            echo "Summary Page Spec regions have diverged — edit both copies together:"
+            printf '%s  %s\n' "$ha" "$a"
+            printf '%s  %s\n' "$hb" "$b"
             exit 1
           fi
 
