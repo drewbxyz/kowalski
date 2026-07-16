@@ -1,0 +1,14 @@
+{
+  "sources": {
+    "sources/articles/Sourdough Starter Basics.md": {
+      "hash": "2919b3824849e3b39a37f1c7e5d1156d",
+      "ingested_at": "2026-07-10",
+      "pages_created": [
+        "wiki/sources/Sourdough Starter Basics.md",
+        "wiki/topics/Sourdough Starter.md",
+        "wiki/topics/Wild Yeast.md"
+      ],
+      "pages_updated": []
+    }
+  }
+}
