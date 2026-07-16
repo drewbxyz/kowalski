@@ -56,6 +56,16 @@ Verify the install:
 - `/plugin configure kowalski` shows both config options (`wiki_root`, `sources_dir`).
 - Ending a session (Stop) in a non-vault project does nothing to any `wiki/` directory there (the Stop hook is gated on an existing `hot.md` at the configured wiki root, so it never touches unrelated repos).
 
+### Optional dependency: defuddle CLI
+
+The **autoresearch** skill fetches sources with [Defuddle](https://github.com/kepano/defuddle) (`defuddle parse <url> --md`), which returns clutter-stripped article markdown. Install it for cleaner source extraction:
+
+```
+npm install -g defuddle-cli
+```
+
+Without it, autoresearch degrades gracefully to WebFetch — everything still works, extraction is just noisier.
+
 ## Development notes
 
 - The **Vault Context** block (plugin contract + MUST rules) is shared verbatim across all 5 skills and both agents — edit all 7 copies together. CI fails if the copies diverge.
