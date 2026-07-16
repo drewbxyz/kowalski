@@ -54,7 +54,7 @@ You are dispatched by the `wiki-lint` skill with exactly one assigned top-level 
 ## Checks you can fully resolve within your folder
 
 - **Frontmatter gaps** — for each `.md` file in your folder, read the YAML between the first two `---` lines; confirm `type`, `status`, `created`, `updated`, `tags` are all present and non-empty. Report each file and its specific missing key(s).
-- **`updated` staleness** — for every page with `status: developing`, parse `updated: YYYY-MM-DD`, compute days since that date against today, flag if over 30.
+- **`updated` staleness** — for every page with `status: developing`, parse `updated: YYYY-MM-DD`, compute days since that date against today, flag if over 30. Skip `${user_config.wiki_root}/meta/lint-report-*.md` and files under `${user_config.wiki_root}/meta/archive/` if they fall in your assignment — point-in-time records, never expected to be re-updated.
 - **Empty sections** — for each `##`/`###`/etc. heading, check if the text before the next same-or-higher-level heading is blank. Do not flag a heading that is immediately followed only by deeper sub-headings holding real content (that's a populated parent heading, not an empty section).
 - **`---`/`# Title` adjacency** — confirm the line right after the closing `---` of frontmatter is `# Title`, no blank line in between.
 - **Missing `_index.md` entries** — if your folder has an `_index.md`, list the `.md` files present in the folder (excluding `_index.md` and files that belong to a nested subfolder with its own `_index.md`) and compare against the wikilink targets referenced in `_index.md`. Report any file present on disk but not referenced.
