@@ -11,7 +11,7 @@ This repo is both the plugin and its own single-plugin marketplace.
 ```
 .claude-plugin/
 ├── plugin.json        # manifest + userConfig (wiki_root, sources_dir)
-└── marketplace.json   # self-hosting marketplace ("drewbeamer") listing this plugin
+└── marketplace.json   # self-hosting marketplace ("drewbxyz") listing this plugin
 skills/                # wiki-ingest, wiki-query, wiki-lint, wiki-save, autoresearch
 agents/                # ingest-worker, lint-worker (dispatched as kowalski:<name>)
 hooks/hooks.json       # SessionStart + PostCompact (cat hot.md), Stop (command hook: hot.md staleness check)
@@ -37,8 +37,10 @@ On enable, Claude Code prompts for two directories (persisted per machine in `se
 # or from a local clone
 /plugin marketplace add <path-to-clone>
 
-/plugin install kowalski@drewbeamer
+/plugin install kowalski@drewbxyz
 ```
+
+> **Migrating from the old marketplace name:** the marketplace was previously named `drewbeamer`; if you installed under that name, remove the old marketplace entry, re-add the marketplace, and reinstall the plugin as `kowalski@drewbxyz`.
 
 Answer the two config prompts, then launch Claude Code **from the vault root** — all skill commands are vault-root-relative. The hooks themselves anchor their paths on `$CLAUDE_PROJECT_DIR` (the project root Claude Code passes to hook commands), so they resolve correctly regardless of the shell's current working directory; the skills, however, still expect a launch from the vault root.
 
