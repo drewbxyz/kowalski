@@ -1,6 +1,6 @@
 ---
 name: ingest-worker
-description: Processes one source file end-to-end for batch wiki ingestion (summary page, entity/concept pages, proposed _index.md lines). Never writes the wiki master index, the operations log, the hot cache, the sources manifest, or any folder _index.md.
+description: Processes one source file end-to-end for batch wiki ingestion (summary page, new entity/concept pages, proposed edits to existing pages, proposed _index.md lines). Never writes the wiki master index, the operations log, the hot cache, the sources manifest, any folder _index.md, or any existing wiki page — workers only create.
 tools: Read, Write, Edit, Glob, Grep
 ---
 
@@ -50,7 +50,7 @@ Every wiki folder has an `_index.md` catalog page. `${user_config.wiki_root}/ind
 
 You are dispatched by the `wiki-ingest` skill's orchestrator to process **exactly one** source file, as part of a parallel batch. You will be told which source file to process (its path under `${user_config.sources_dir}/`) and its delta-check hash.
 
-**You do NOT write `${user_config.wiki_root}/index.md`, `${user_config.wiki_root}/log.md`, `${user_config.wiki_root}/hot.md`, `${user_config.sources_dir}/manifest.json`, or any folder `_index.md`.** Those are shared files owned exclusively by the orchestrator (single-writer rule) — writing them from a worker risks corrupting them when multiple workers run concurrently (e.g. two workers filing into the same folder would both read-modify-write its `_index.md`). Instead, return the information the orchestrator needs to update them itself (see "What to return" below).
+**You do NOT write `${user_config.wiki_root}/index.md`, `${user_config.wiki_root}/log.md`, `${user_config.wiki_root}/hot.md`, `${user_config.sources_dir}/manifest.json`, or any folder `_index.md` — and you never edit any existing wiki page.** The shared files are owned exclusively by the orchestrator (single-writer rule) — writing them from a worker risks corrupting them when multiple workers run concurrently (e.g. two workers filing into the same folder would both read-modify-write its `_index.md`). The same race applies to any existing page: two workers editing the same entity page would silently overwrite each other's changes. You only create new pages — brand-new files can't race. For everything else, return the information the orchestrator needs to apply it itself, including your proposed edits to existing pages (see "What to return" below).
 
 Run this flow for your assigned source:
 
@@ -100,11 +100,13 @@ Run this flow for your assigned source:
    - Related: [[Entity Page]], [[Another Page]]
    ```
    <!-- /Summary Page Spec -->
-3. **Create or update entity and concept pages** touched by the source's content — new pages or edits to existing ones. To place each page, follow the Vault Context discovery rule: find where this vault already files that content type (`${user_config.wiki_root}/overview.md`, folder `_index.md` catalogs, existing peer pages) and file alongside those peers. Link each new page from the closest hub page the vault already has.
+3. **Create entity and concept pages** touched by the source's content — **new pages only; you never edit an existing page.** To place each page, follow the Vault Context discovery rule: find where this vault already files that content type (`${user_config.wiki_root}/overview.md`, folder `_index.md` catalogs, existing peer pages) and file alongside those peers. Just before writing any new page, re-check that its exact path doesn't already exist — a sibling worker may have created it mid-batch. If it now exists, treat it as an existing page and return a proposed edit instead of writing.
+
+   **Anything that would change an EXISTING page** — a new section, an updated fact, a `[[wikilink]]` from a hub page to one of your new pages, a `> [!contradiction]` callout — becomes a **proposed edit** in your report (see "What to return"), never an edit you make yourself.
 
    **No precedent for something? You cannot ask the user, so do NOT create a new folder.** Write only the pages whose location is unambiguous (the `${user_config.wiki_root}/sources/` summary page always is — it's contract) and return every unplaced item as a needs-filing entry in your report (see "What to return"); the orchestrator consolidates needs-filing items across workers and asks the user once.
 
-   Watch for contradictions with existing pages: if the source conflicts with a claim already in the wiki, add a `> [!contradiction]` callout to **both** the new and the existing page, describing the conflict — don't silently overwrite. Note any contradictions found in your report.
+   Watch for contradictions with existing pages: if the source conflicts with a claim already in the wiki, add a `> [!contradiction]` callout to the new page you create, and return a proposed edit with the full matching callout text for the existing page — don't silently overwrite, and don't edit the existing page yourself. Note any contradictions found in your report.
 4. **Compose proposed `_index.md` lines** — for each new page, draft the catalog line it needs in its folder's `_index.md` (matching that catalog's existing line style). Do NOT write any `_index.md` yourself — return the lines in your report; the orchestrator applies them.
 
 ## What to return
@@ -112,7 +114,7 @@ Run this flow for your assigned source:
 When done, report back to the orchestrator with a structured summary:
 
 - **Pages created** — full vault-relative paths.
-- **Pages updated** — full vault-relative paths.
+- **Proposed edits to existing pages** — one entry per page: the full vault-relative path, what to change (which section, and the exact content to add or modify — e.g. the full `> [!contradiction]` callout text), and why. Or "none." The orchestrator applies these after all workers report back.
 - **Proposed `_index.md` lines** — one entry per touched folder catalog, `folder → line`, e.g. `${user_config.wiki_root}/<folder>/_index.md → - [[Citrus-Soy Chicken Ramen Recipe]] — weeknight ramen, sesame-free`.
 - **Needs-filing items** — content the vault has no precedent for, one per line: `<content type / proposed page title> — <one-line description>`, or "none." Do not create folders or pages for these; the orchestrator consolidates them across workers and asks the user where they should live.
 - **Proposed manifest entry** — the exact JSON the orchestrator should merge into `${user_config.sources_dir}/manifest.json`:
@@ -126,5 +128,6 @@ When done, report back to the orchestrator with a structured summary:
     }
   }
   ```
+  `pages_updated` lists the existing pages your proposed edits target — the orchestrator applies those edits before merging the manifest.
 - **Key insight** — one sentence, for the orchestrator's log entry.
-- **Contradictions found** — any `> [!contradiction]` callouts you added, with the two pages involved, or "none."
+- **Contradictions found** — any `> [!contradiction]` callouts you added to new pages or proposed for existing ones, with the two pages involved, or "none."
