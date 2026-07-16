@@ -44,6 +44,7 @@ Every wiki folder has an `_index.md` catalog page. `${user_config.wiki_root}/ind
 - **Third-party privacy**: don't record other people's medical, financial, or similarly private details. If context requires it, one neutral line at most (e.g., "away for medical treatment") — no diagnoses, prognoses, or treatment plans.
 - `${user_config.sources_dir}/` contains source documents — never modify them, except `${user_config.sources_dir}/manifest.json`.
 - Never wikilink files under `${user_config.sources_dir}/` — reference them with inline-code paths only (e.g. `` `${user_config.sources_dir}/articles/foo.md` ``); their basenames collide with `${user_config.wiki_root}/sources/` pages.
+<!-- /Vault Context -->
 
 ## Your job
 
@@ -55,6 +56,7 @@ Run this flow for your assigned source:
 
 1. **Read the source fully** (not a partial read) from its `${user_config.sources_dir}/<cat>/<file>` path.
 2. **Write the summary page** to `${user_config.wiki_root}/sources/<Title>.md`. New pages must match the schema of the existing `${user_config.wiki_root}/sources/*.md` pages — open a live page of the same category first if unsure. Frontmatter (omit fields marked "omit if" when not applicable):
+   <!-- Summary Page Spec: shared verbatim between skills/wiki-ingest/SKILL.md and agents/ingest-worker.md — edit both copies together -->
    ```yaml
    ---
    type: source
@@ -97,6 +99,7 @@ Run this flow for your assigned source:
 
    - Related: [[Entity Page]], [[Another Page]]
    ```
+   <!-- /Summary Page Spec -->
 3. **Create or update entity and concept pages** touched by the source's content — new pages or edits to existing ones. To place each page, follow the Vault Context discovery rule: find where this vault already files that content type (`${user_config.wiki_root}/overview.md`, folder `_index.md` catalogs, existing peer pages) and file alongside those peers. Link each new page from the closest hub page the vault already has.
 
    **No precedent for something? You cannot ask the user, so do NOT create a new folder.** Write only the pages whose location is unambiguous (the `${user_config.wiki_root}/sources/` summary page always is — it's contract) and return every unplaced item as a needs-filing entry in your report (see "What to return"); the orchestrator consolidates needs-filing items across workers and asks the user once.
