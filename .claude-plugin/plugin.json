@@ -1,6 +1,6 @@
 {
   "name": "kowalski",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "LLM-maintained Obsidian wiki operations: ingest, query, lint, save, autoresearch — with parallel worker agents and hot-cache hooks.",
   "author": {
     "name": "Drew Beamer",

@@ -14,7 +14,7 @@ This repo is both the plugin and its own single-plugin marketplace.
 └── marketplace.json   # self-hosting marketplace ("drewbeamer") listing this plugin
 skills/                # wiki-ingest, wiki-query, wiki-lint, wiki-save, autoresearch
 agents/                # ingest-worker, lint-worker (dispatched as kowalski:<name>)
-hooks/hooks.json       # SessionStart + PostCompact (cat hot.md), Stop (prompt hook)
+hooks/hooks.json       # SessionStart + PostCompact (cat hot.md), Stop (command hook: hot.md staleness check)
 ```
 
 ## Configurable paths
@@ -26,9 +26,7 @@ On enable, Claude Code prompts for two directories (persisted per machine in `se
 | `wiki_root` | `wiki` | The wiki folder, relative to the vault root |
 | `sources_dir` | `sources` | The synced source drop-zone, relative to the vault root |
 
-`${user_config.*}` placeholders in skill/agent content and the hook command are substituted **before the model reads them**, so the skills' bash commands carry the literal configured paths. Content folders under `wiki_root` are discovered at runtime rather than fixed (see the skills' Vault Context block) — only the two roots are configurable.
-
-**Known limitation:** the Stop hook is `prompt`-type, where `${user_config.*}` substitution is not documented to apply — it is worded generically ("the configured wiki root"). With a non-default `wiki_root`, the evaluator resolves the actual path from session context.
+`${user_config.*}` placeholders in skill/agent content and the hook commands are substituted **before the model reads them**, so the skills' bash commands carry the literal configured paths. Content folders under `wiki_root` are discovered at runtime rather than fixed (see the skills' Vault Context block) — only the two roots are configurable.
 
 ## Install
 
@@ -42,7 +40,7 @@ On enable, Claude Code prompts for two directories (persisted per machine in `se
 /plugin install kowalski@drewbeamer
 ```
 
-Answer the two config prompts, then launch Claude Code **from the vault root** — all skill commands are vault-root-relative.
+Answer the two config prompts, then launch Claude Code **from the vault root** — all skill commands are vault-root-relative. The hooks themselves anchor their paths on `$CLAUDE_PROJECT_DIR` (the project root Claude Code passes to hook commands), so they resolve correctly regardless of the shell's current working directory; the skills, however, still expect a launch from the vault root.
 
 **Recommended: enable kowalski per-project, not globally.** Its hooks fire in *every* project where the plugin is enabled, so a global enablement runs the SessionStart/PostCompact/Stop hooks in unrelated repos too. Scope it to the vault by enabling it in the vault's `.claude/settings.json` (project-level) rather than in your user-level settings — that way the hooks only run when you launch Claude Code from the vault.
 
@@ -54,7 +52,7 @@ Verify the install:
 
 - A new session launched from the vault root shows the hot cache on start, and `lint the wiki` fans out to `kowalski:lint-worker` on large vaults.
 - `/plugin configure kowalski` shows both config options (`wiki_root`, `sources_dir`).
-- Ending a session (Stop) in a non-vault project does nothing to any `wiki/` directory there (the Stop hook is gated on an existing `hot.md` at the configured wiki root, so it never touches unrelated repos).
+- Ending a session (Stop) in a non-vault project does nothing (the Stop hook exits immediately unless a `hot.md` exists at the configured wiki root, so it never touches unrelated repos). In the vault, editing a wiki page and then stopping without rewriting `hot.md` blocks the stop with a rewrite instruction.
 
 ### Optional dependency: defuddle CLI
 
