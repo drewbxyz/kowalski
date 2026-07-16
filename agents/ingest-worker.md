@@ -6,7 +6,7 @@ tools: Read, Write, Edit, Glob, Grep
 
 ## Vault Context
 
-<!-- Vault Context: shared verbatim across all kowalski plugin skills and agents — edit all copies together -->
+<!-- Vault Context: generated from shared/vault-context.md — edit that file and run scripts/sync-shared-blocks.sh -->
 
 Vault root: the Obsidian vault directory — the one containing `${user_config.wiki_root}/` and `${user_config.sources_dir}/`. Claude Code is launched from here; run every command from the vault root.
 
@@ -56,7 +56,7 @@ Run this flow for your assigned source:
 
 1. **Read the source fully** (not a partial read) from its `${user_config.sources_dir}/<cat>/<file>` path.
 2. **Write the summary page** to `${user_config.wiki_root}/sources/<Title>.md`. New pages must match the schema of the existing `${user_config.wiki_root}/sources/*.md` pages — open a live page of the same category first if unsure. Frontmatter (omit fields marked "omit if" when not applicable):
-   <!-- Summary Page Spec: shared verbatim between skills/wiki-ingest/SKILL.md and agents/ingest-worker.md — edit both copies together -->
+   <!-- Summary Page Spec: generated from shared/summary-page-spec.md — edit that file and run scripts/sync-shared-blocks.sh -->
    ```yaml
    ---
    type: source
