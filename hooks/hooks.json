@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -f \"${user_config.wiki_root}/hot.md\" ] && cat \"${user_config.wiki_root}/hot.md\" || true"
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/${user_config.wiki_root}/hot.md\" ] && cat \"$CLAUDE_PROJECT_DIR/${user_config.wiki_root}/hot.md\" || true"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -f \"${user_config.wiki_root}/hot.md\" ] && cat \"${user_config.wiki_root}/hot.md\" || true"
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/${user_config.wiki_root}/hot.md\" ] && cat \"$CLAUDE_PROJECT_DIR/${user_config.wiki_root}/hot.md\" || true"
           }
         ]
       }
@@ -27,8 +27,8 @@
         "matcher": "",
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "If files under the configured wiki root were created or edited this session AND a hot.md already exists at the top of that wiki root, verify the agent has rewritten hot.md this session (under 500 words, preserving its existing section shape). If the wiki root was untouched or hot.md does not exist, pass."
+            "type": "command",
+            "command": "grep -q '\"stop_hook_active\"[[:space:]]*:[[:space:]]*true' && exit 0; w=\"$CLAUDE_PROJECT_DIR/${user_config.wiki_root}\"; [ -f \"$w/hot.md\" ] || exit 0; changed=$(find \"$w\" -name '*.md' ! -name 'hot.md' -newer \"$w/hot.md\" 2>/dev/null | head -5); [ -n \"$changed\" ] || exit 0; echo \"Wiki pages changed after hot.md was last rewritten: $(echo \"$changed\" | tr '\\n' ' ')— rewrite $w/hot.md (~500 words, preserving its existing section shape) before stopping.\" >&2; exit 2"
           }
         ]
       }
