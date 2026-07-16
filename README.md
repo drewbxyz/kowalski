@@ -56,6 +56,15 @@ Verify the install:
 - `/plugin configure kowalski` shows both config options (`wiki_root`, `sources_dir`).
 - Ending a session (Stop) in a non-vault project does nothing to any `wiki/` directory there (the Stop hook is gated on an existing `hot.md` at the configured wiki root, so it never touches unrelated repos).
 
+## Example vault
+
+`examples/vault/` is a minimal vault built with the default config (`wiki_root: wiki`, `sources_dir: sources`). It serves two purposes:
+
+- **Reference layout** — every plugin-contract file populated the way the skills expect: `index.md`, `hot.md`, `log.md`, `overview.md`, `sources/` summary pages, `meta/` with a dashboard, plus a `sources/` drop zone with one ingested sample source tracked in `manifest.json`.
+- **Smoke-test target** — launch Claude Code from `examples/vault/` (with the plugin enabled) and try the skills against known-good content: `lint the wiki` should come back clean; `ingest all new` should report the sample source as already ingested and unchanged.
+
+The `wiki/topics/` folder is illustrative only — it is one example layout this vault happens to use, not a template. The skills discover each vault's own content structure at runtime (via `overview.md` and the folder `_index.md` catalogs) rather than prescribing one.
+
 ## Development notes
 
 - The **Vault Context** block (plugin contract + MUST rules) is shared verbatim across all 5 skills and both agents — edit all 7 copies together. CI fails if the copies diverge.
