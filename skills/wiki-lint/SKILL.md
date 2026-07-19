@@ -149,16 +149,19 @@ status: developing
 
 No blank line between the closing `---` and the `# Title` heading. Body sections, in this exact order:
 
-1. **Carry-Forward Status** — what Section 2 found: items resolved since last report, items still open (with recurrence count), and which of those are process failures.
-2. **PROCESS FAILURES** — items open in 2+ consecutive reports, promoted here from Carry-Forward Status. Empty section (state "None") if there are none.
-3. **Errors** — hard problems: dead links, frontmatter gaps, `---`/`# Title` violations.
-4. **Warnings** — softer problems: orphans, staleness, volatile-stat duplication, missing `_index.md` entries.
-5. **Info** — empty sections and anything else worth noting but not actionable on its own.
-6. **Stats** — pages scanned, counts per finding category, comparison to previous report's counts.
+1. **`## Carried Findings`** — the carry-forward gate output (Section 2e): every finding with `carry >= 1` as a callout, `[!warning]` for carry 1 and `[!failure]` process failures for carry >= 2, most-escalated first. Write `None — clean carry-forward.` if there are none. This section replaces the former "Carry-Forward Status" and "PROCESS FAILURES" sections — process failures now appear here as `[!failure]` callouts.
+2. **`## Errors`** — carry:0 hard problems: dead links, dead source-path references, frontmatter gaps, `---`/`# Title` violations. Tag each finding line `[new YYYY-MM-DD]` (today's date).
+3. **`## Warnings`** — carry:0 softer problems: orphans, staleness, volatile-stat duplication, missing `_index.md` entries. Tag each `[new YYYY-MM-DD]`.
+4. **`## Info`** — carry:0 empty sections and anything else worth noting but not actionable on its own. Tag each `[new YYYY-MM-DD]`.
+5. **`## Resolved Since Last Run`** — findings that were open in the prior report and are gone this run (Section 2c), each with its key and how long it was open. `None` if none.
+6. **`## Waived`** — sticky owner-accepted findings with one-line reasons (Section 2d), re-emitted every run. `None` if none.
+7. **`## Stats`** — pages scanned, counts per finding category, comparison to the previous report's counts, plus the carry-forward tally: how many findings carried, and how many escalated to process failure.
+
+Every open finding must carry its inline carry tag so the next run's gate (Section 2b) can read the count back: `[new YYYY-MM-DD]` on carry:0 body lines, and `Carried xN (since …)` in each `## Carried Findings` callout title. Findings under `## Resolved Since Last Run` and `## Waived` are not open and take no tag.
 
 **Rotation (after writing the new report):** list `${user_config.wiki_root}/meta/lint-report-*.md`, sort by date descending, keep the newest 2 in `${user_config.wiki_root}/meta/`, and `mv` every older one into `${user_config.wiki_root}/meta/archive/`. Never rotate or move files already in `${user_config.wiki_root}/meta/archive/`.
 
-**Log entry (after rotation):** add an entry at the TOP of `${user_config.wiki_root}/log.md` shaped `## [YYYY-MM-DD] lint | <n> findings (<severity summary>)`, e.g. `## [2026-07-08] lint | Wiki health check + fixes applied — lint-report-2026-07-08`, followed by a few bullets summarizing scope, key findings, and fixes applied, and a closing `Report: [[lint-report-YYYY-MM-DD]]` line — match the style of existing lint entries already in `${user_config.wiki_root}/log.md`.
+**Log entry (after rotation):** add an entry at the TOP of `${user_config.wiki_root}/log.md` shaped `## [YYYY-MM-DD] lint | <n> findings (<severity summary>)` — if any findings are process failures (carry >= 2), name that count in the severity summary, e.g. `## [2026-07-18] lint | 5 findings (1 PROCESS FAILURE)`, followed by a few bullets summarizing scope, key findings, and fixes applied, and a closing `Report: [[lint-report-YYYY-MM-DD]]` line — match the style of existing lint entries already in `${user_config.wiki_root}/log.md`.
 
 **Update `${user_config.wiki_root}/index.md` (after the log entry):** point the "Last health check" line under `## Meta` at the new report — `[[lint-report-YYYY-MM-DD]]` — and shift the previous newest report into its older-reports parenthetical.
 
