@@ -45,18 +45,72 @@ Every wiki folder has an `_index.md` catalog page. `${user_config.wiki_root}/ind
 - Never wikilink files under `${user_config.sources_dir}/` — reference them with inline-code paths only (e.g. `` `${user_config.sources_dir}/articles/foo.md` ``); their basenames collide with `${user_config.wiki_root}/sources/` pages.
 <!-- /Vault Context -->
 
-## 2. Step 1 (mandatory): carry-forward check
+## 2. Step 1 (mandatory): carry-forward gate
 
-**"Lint carries forward" is the defining principle of this skill**: a finding that stays open across two consecutive reports is a process failure, not a routine note — the point of every lint run is to drive prior findings to closure, not just to accumulate new ones. Run this before any fresh scanning.
+**"Lint carries forward" is the defining principle of this skill**: the point of every run is to drive prior findings to closure, not to accumulate new ones. This is a hard gate — run it in full, before any fresh scanning, and let its output open the report. A finding that survives unresolved across consecutive reports must get louder each run, never blend back in with first-time findings.
 
-1. Find the newest report: `ls ${user_config.wiki_root}/meta/lint-report-*.md | sort | tail -1` (dates sort lexicographically). Read it in full. If no `${user_config.wiki_root}/meta/lint-report-*.md` exists, this is the first lint run — write "Carry-Forward Status: first run — no prior report" in the new report and continue to Section 3.
-2. Extract its open items — anything the report itself does not mark resolved. Concretely, scan for:
-   - Any section titled or containing "Carried Forward", "Open", "Not Fixed", "Needs Human Judgment", "Needs Review", or a Recommended Fix Plan / "Batch B" of undone items.
-   - Table rows or bullets under Dead Links / Orphans / Frontmatter Gaps / Empty Sections / Naming that are **not** prefixed with ✅ and not listed under a "Fixes Applied" / "Applied Fixes" / "Verified Clean" / "Resolved" heading.
-   - Do not count anything under "Not Checked" — those were explicitly skipped, not left open.
-3. For each open item, re-run the matching check from Section 3 against the current vault to see if it is still true today. Drop items that are now resolved (note them in Carry-Forward Status as "resolved since last report" for transparency — don't just silently omit them).
-4. For items still open, check whether they were *also* open in the report immediately prior to the newest one (i.e., the report that was newest before this one — usually the next-newest file in `${user_config.wiki_root}/meta/` or `${user_config.wiki_root}/meta/archive/`). If an item appears open in two consecutive reports, its severity is **PROCESS FAILURE**, and it goes at the very top of the new report, above every other finding.
-5. Items open for the first time (only in the newest report, not the one before it) are listed in Carry-Forward Status as "carried, first recurrence" — not yet a process failure, but flag it plainly so the next lint run treats it as the second consecutive occurrence if still open then.
+### 2a. Read the prior report and rebuild the open set
+
+1. Find the newest report: `ls ${user_config.wiki_root}/meta/lint-report-*.md | sort | tail -1` (dates sort lexicographically). Read it in full. If none exists, this is the first run — write `## Carried Findings` followed by `None — first run, no prior report.` in the new report and continue to Section 3.
+2. Collect every finding that was **open** in the prior report. In a report written by this skill, open findings live in exactly two places:
+   - the `## Carried Findings` callouts — each callout is one open finding, its carry count in the callout title;
+   - the body `## Errors` / `## Warnings` / `## Info` finding lines — each first-time-open, tagged `[new YYYY-MM-DD]`.
+
+   EXCLUDE `## Resolved Since Last Run` (already closed) and `## Waived` (intentionally accepted — see 2d). Nothing else counts as open.
+3. Legacy fallback: if the newest report predates this format (no `## Carried Findings` section), extract open items the old way — any Errors/Warnings/Info line not prefixed ✅ and not sitting under a "Fixes Applied"/"Resolved" heading — and treat each as carry 0 with `since` = that report's date.
+
+### 2b. Identity key and carry count
+
+Give each open finding a stable identity key so it matches run-to-run:
+
+```
+key = <relative-file-path> | <finding-category> | <short normalized summary>
+```
+
+`finding-category` is the check name: `dead-link`, `dead-source-path`, `orphan`, `frontmatter-gap`, `updated-staleness`, `empty-section`, `adjacency`, `volatile-stat`, `missing-index-entry`. Normalized summary = the finding's core claim, lowercased and whitespace-collapsed, with line numbers and dates stripped — anchor line numbers drift between runs, so NEVER key on line number. Matching is fuzzy: a candidate this run and a prior open finding are the same finding if they share file + category and their summaries clearly describe the same defect. When genuinely unsure, treat it as new — a false "new" is cheaper than a false "resolved".
+
+Read each prior open finding's carry count and first-seen date from its tag (match case-insensitively):
+
+- callout `> [!warning] Carried x1 (since 2026-07-12)` → carry 1, since 2026-07-12
+- callout `> [!failure] PROCESS FAILURE — carried x2 (open since 2026-07-04)` → carry 2, since 2026-07-04
+- body tag `[new 2026-07-12]` → carry 0, since 2026-07-12
+- body tag `[carried x1, since 2026-07-12]` (legacy inline form, if a prior run used it) → carry 1, since 2026-07-12
+
+### 2c. Recompute this run
+
+Run the Section 3 checks, then reconcile each prior open finding against this run's results by identity key:
+
+- **Still open** (found again this run) → `carry = prior_carry + 1`, keep the original `since` date. Goes in `## Carried Findings` (2e), NOT in the body.
+- **Resolved** (not found this run) → record under `## Resolved Since Last Run` with its key and how long it was open; drop from the open set.
+- **New** (no prior-open match) → `carry = 0`, `since = today`. Stays in the normal body section for its severity, tagged `[new <today>]`.
+
+### 2d. Waivers
+
+A finding can be intentionally accepted rather than fixed (e.g. historical dead links in `log.md`, already exempt in Section 3, or any finding the owner consciously chooses to live with). Waiving is a deliberate, owner-approved act — never a silent drop:
+
+- When the owner approves waiving a finding, write it under `## Waived` with its identity key and a one-line reason.
+- `## Waived` is sticky: re-emit every entry from the prior report's `## Waived` section into the new report, plus any newly waived this run — a waiver persists across rotation because it lives inline in every report.
+- Waived keys count as **closed**: exclude them from the open set (2a) and never re-flag them as new. If the underlying condition genuinely no longer exists, retire the waiver and note it under `## Resolved Since Last Run`.
+
+### 2e. Escalation (the gate)
+
+Every finding with `carry >= 1` is surfaced as a callout at the TOP of the report, under `## Carried Findings`, above all first-time findings — never mixed into the body. Order callouts most-escalated first.
+
+- **carry == 1** (open in two consecutive reports) → `[!warning]`, and name the next run as the failure point:
+
+```markdown
+> [!warning] Carried x1 (since 2026-07-12)
+> `wiki/engineering/Foo.md` — missing `updated` bump. Flagged last run, still open. If it is still open next run this is a PROCESS FAILURE.
+```
+
+- **carry >= 2** (open across three or more consecutive reports) → `[!failure]`, labeled a process failure:
+
+```markdown
+> [!failure] PROCESS FAILURE — carried x2 (open since 2026-07-04)
+> `wiki/engineering/Foo.md` — missing `updated` bump. Open across three consecutive reports. Fix this run or consciously waive it (Section 2d).
+```
+
+If there are no carried findings, write `## Carried Findings` followed by `None — clean carry-forward.` The section's presence is the proof the gate ran.
 
 ## 3. Checks
 
