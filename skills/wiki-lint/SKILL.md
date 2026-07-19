@@ -178,3 +178,4 @@ Always ask before auto-fixing anything — present the findings and get explicit
 - Mechanical fixes are safe to apply automatically: adding missing frontmatter keys, adding missing `_index.md` entries.
 - Anything else (rewriting stale content, resolving contradictions, renaming files, deduplicating volatile stats) needs the owner's explicit sign-off per item, not a blanket "fix everything."
 - **Never auto-delete a page**, even one confirmed as an orphan or fully superseded. Flag it for the owner to decide.
+- **Waiving** a finding (accepting it instead of fixing it) is an explicit, per-item owner decision recorded under `## Waived` in the report with a one-line reason (Section 2d) — never waive silently or in bulk.
