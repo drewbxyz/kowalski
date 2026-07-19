@@ -69,20 +69,21 @@ key = <relative-file-path> | <finding-category> | <short normalized summary>
 
 `finding-category` is the check name: `dead-link`, `dead-source-path`, `orphan`, `frontmatter-gap`, `updated-staleness`, `empty-section`, `adjacency`, `volatile-stat`, `missing-index-entry`. Normalized summary = the finding's core claim, lowercased and whitespace-collapsed, with line numbers and dates stripped — anchor line numbers drift between runs, so NEVER key on line number. Matching is fuzzy: a candidate this run and a prior open finding are the same finding if they share file + category and their summaries clearly describe the same defect. When genuinely unsure, treat it as new — a false "new" is cheaper than a false "resolved".
 
-Read each prior open finding's carry count and first-seen date from its tag (match case-insensitively):
+Every open finding carries its `finding-category` inline as a `[<category>]` token (from the vocabulary above) leading its descriptive text — so the category leg of the key is read straight back, never re-inferred from prose. Read each prior open finding's category, carry count, and first-seen date from its tag/callout (match case-insensitively):
 
-- callout `> [!warning] Carried x1 (since 2026-07-12)` → carry 1, since 2026-07-12
-- callout `> [!failure] PROCESS FAILURE — carried x2 (open since 2026-07-04)` → carry 2, since 2026-07-04
-- body tag `[new 2026-07-12]` → carry 0, since 2026-07-12
-- body tag `[carried x1, since 2026-07-12]` (legacy inline form, if a prior run used it) → carry 1, since 2026-07-12
+- callout titled `> [!warning] Carried x1 (since 2026-07-12)` whose body reads `> [frontmatter-gap] ...` → category `frontmatter-gap`, carry 1, since 2026-07-12
+- callout titled `> [!failure] PROCESS FAILURE — carried x2 (open since 2026-07-04)`, body `> [frontmatter-gap] ...` → category `frontmatter-gap`, carry 2, since 2026-07-04
+- body line `- [frontmatter-gap] ... [new 2026-07-12]` → category `frontmatter-gap`, carry 0, since 2026-07-12
+
+A newest report that predates the `[<category>]` token (older format) simply has no token to read; fall back to inferring the category from the finding's wording and section, exactly as the legacy path (2a.3) already does.
 
 ### 2c. Recompute this run
 
-Run the Section 3 checks, then reconcile each prior open finding against this run's results by identity key:
+Run the Section 3 checks (at scale, per Section 5, this is the per-folder worker fan-out; the carry-forward gate itself — reading the prior report, reconciling, and writing — is the orchestrator's alone, under the single-writer rule). Then reconcile each prior open finding against this run's results by identity key:
 
 - **Still open** (found again this run) → `carry = prior_carry + 1`, keep the original `since` date. Goes in `## Carried Findings` (2e), NOT in the body.
-- **Resolved** (not found this run) → record under `## Resolved Since Last Run` with its key and how long it was open; drop from the open set.
-- **New** (no prior-open match) → `carry = 0`, `since = today`. Stays in the normal body section for its severity, tagged `[new <today>]`.
+- **Resolved** (not found this run) → record under `## Resolved Since Last Run` with its key and how long it was open (e.g. `open 7 days, since 2026-07-11`); drop from the open set.
+- **New** (no prior-open match) → **unless its key matches a `## Waived` entry (2d)**, in which case it stays waived and is not flagged — set `carry = 0`, `since = today`. Stays in the normal body section for its severity, its descriptive text led by its `[<category>]` token and tagged `[new <today>]`.
 
 ### 2d. Waivers
 
@@ -100,14 +101,14 @@ Every finding with `carry >= 1` is surfaced as a callout at the TOP of the repor
 
 ```markdown
 > [!warning] Carried x1 (since 2026-07-12)
-> `wiki/engineering/Foo.md` — missing `updated` bump. Flagged last run, still open. If it is still open next run this is a PROCESS FAILURE.
+> [frontmatter-gap] `wiki/engineering/Foo.md` — missing `updated` bump. Flagged last run, still open. If it is still open next run this is a PROCESS FAILURE.
 ```
 
 - **carry >= 2** (open across three or more consecutive reports) → `[!failure]`, labeled a process failure:
 
 ```markdown
 > [!failure] PROCESS FAILURE — carried x2 (open since 2026-07-04)
-> `wiki/engineering/Foo.md` — missing `updated` bump. Open across three consecutive reports. Fix this run or consciously waive it (Section 2d).
+> [frontmatter-gap] `wiki/engineering/Foo.md` — missing `updated` bump. Open across three consecutive reports. Fix this run or consciously waive it (Section 2d).
 ```
 
 If there are no carried findings, write `## Carried Findings` followed by `None — clean carry-forward.` The section's presence is the proof the gate ran.
@@ -149,15 +150,15 @@ status: developing
 
 No blank line between the closing `---` and the `# Title` heading. Body sections, in this exact order:
 
-1. **`## Carried Findings`** — the carry-forward gate output (Section 2e): every finding with `carry >= 1` as a callout, `[!warning]` for carry 1 and `[!failure]` process failures for carry >= 2, most-escalated first. Write `None — clean carry-forward.` if there are none. This section replaces the former "Carry-Forward Status" and "PROCESS FAILURES" sections — process failures now appear here as `[!failure]` callouts.
-2. **`## Errors`** — carry:0 hard problems: dead links, dead source-path references, frontmatter gaps, `---`/`# Title` violations. Tag each finding line `[new YYYY-MM-DD]` (today's date).
-3. **`## Warnings`** — carry:0 softer problems: orphans, staleness, volatile-stat duplication, missing `_index.md` entries. Tag each `[new YYYY-MM-DD]`.
-4. **`## Info`** — carry:0 empty sections and anything else worth noting but not actionable on its own. Tag each `[new YYYY-MM-DD]`.
-5. **`## Resolved Since Last Run`** — findings that were open in the prior report and are gone this run (Section 2c), each with its key and how long it was open. `None` if none.
+1. **`## Carried Findings`** — the carry-forward gate output (Section 2e): every finding with `carry >= 1` as a callout, `[!warning]` for carry 1 and `[!failure]` process failures for carry >= 2, most-escalated first. Each callout body leads with the finding's `[<category>]` token so the next run can read the category back (Section 2b). Write `None — clean carry-forward.` if there are none. This section replaces the former "Carry-Forward Status" and "PROCESS FAILURES" sections — process failures now appear here as `[!failure]` callouts.
+2. **`## Errors`** — carry:0 hard problems: dead links, dead source-path references, frontmatter gaps, `---`/`# Title` violations. Prefix each finding line with its `[<category>]` token (from the Section 2b vocabulary) and tag it `[new YYYY-MM-DD]` (today's date). `None.` if the section is empty.
+3. **`## Warnings`** — carry:0 softer problems: orphans, staleness, volatile-stat duplication, missing `_index.md` entries. Prefix each with its `[<category>]` token and tag `[new YYYY-MM-DD]`. `None.` if empty.
+4. **`## Info`** — carry:0 empty sections and anything else worth noting but not actionable on its own. Prefix each with its `[<category>]` token and tag `[new YYYY-MM-DD]`. `None.` if empty.
+5. **`## Resolved Since Last Run`** — findings that were open in the prior report and are gone this run (Section 2c), each with its key and how long it was open (e.g. `open 7 days, since 2026-07-11`). `None` if none.
 6. **`## Waived`** — sticky owner-accepted findings with one-line reasons (Section 2d), re-emitted every run. `None` if none.
 7. **`## Stats`** — pages scanned, counts per finding category, comparison to the previous report's counts, plus the carry-forward tally: how many findings carried, and how many escalated to process failure.
 
-Every open finding must carry its inline carry tag so the next run's gate (Section 2b) can read the count back: `[new YYYY-MM-DD]` on carry:0 body lines, and `Carried xN (since …)` in each `## Carried Findings` callout title. Findings under `## Resolved Since Last Run` and `## Waived` are not open and take no tag.
+Every open finding must carry its inline tags so the next run's gate (Section 2b) can read them back: its `[<category>]` token leading the descriptive text, plus `[new YYYY-MM-DD]` on carry:0 body lines and `Carried xN (since …)` in each `## Carried Findings` callout title. Findings under `## Resolved Since Last Run` and `## Waived` are not open and take no tag.
 
 **Rotation (after writing the new report):** list `${user_config.wiki_root}/meta/lint-report-*.md`, sort by date descending, keep the newest 2 in `${user_config.wiki_root}/meta/`, and `mv` every older one into `${user_config.wiki_root}/meta/archive/`. Never rotate or move files already in `${user_config.wiki_root}/meta/archive/`.
 
